@@ -4,6 +4,12 @@ import sys
 import re
 
 # List your fields here. Use dot notation for nested lookups.
+COOKED_NAMES= [
+    "queryName",
+    "scaleFactor",
+    "timeMillsecs"
+]
+
 FIELD_NAMES = [
     "queryStats.createTime",
     "queryId",
@@ -133,7 +139,7 @@ def main():
 
 
         records = extract_records(data, FIELD_NAMES)
-        write_csv(records, FIELD_NAMES, output_csv)
+        write_csv(records, COOKED_NAMES + FIELD_NAMES, output_csv)
         print(f"✅ Wrote {len(records)} records to {output_csv}")
 
     except requests.RequestException as e:
