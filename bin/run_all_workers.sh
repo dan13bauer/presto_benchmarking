@@ -14,9 +14,10 @@ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-12/root/usr/lib64:/opt/rh/gcc-toolset
 
 for GPU  in $(seq 0 7); do
     #UCX_PARAMS="UCX_TCP_CM_REUSEADDR=y UCX_TLS=^ib UCX_LOG_LEVEL=error UCX_TCP_KEEPINTVL=1ms UCX_KEEPALIVE_INTERVAL=1ms"
+    #CUDA_PARAMS="CUDA_VISIBLE_DEVICES=$GPU LIBCUDF_USE_DEBUG_STREAM_POOL=ON GLOG_logtostderr=1"
     UCX_PARAMS="UCX_TCP_CM_REUSEADDR=y UCX_LOG_LEVEL=error UCX_TCP_KEEPINTVL=1ms UCX_KEEPALIVE_INTERVAL=1ms"
-    CUDA_PARAMS="CUDA_VISIBLE_DEVICES=$GPU LIBCUDF_USE_DEBUG_STREAM_POOL=ON GLOG_logtostderr=0"
-    VELOX_ARGS="-velox_cudf_debug=true -velox_cudf_table_scan=true -velox_cudf_enabled=true -velox_cudf_exchange=true -velox_cudf_memory_resource=pool -v=1"
+    CUDA_PARAMS="CUDA_VISIBLE_DEVICES=$GPU GLOG_logtostderr=1"
+    VELOX_ARGS="-velox_cudf_debug=true -velox_cudf_table_scan=true -velox_cudf_enabled=true -velox_cudf_exchange=true -velox_cudf_memory_resource=pool -v=3"
     WORKER_ID=$((GPU+1))
     
     env $UCX_PARAMS env $CUDA_PARAMS $BUILD_DIR/presto_cpp/main/presto_server  -etc_dir $WORKERS_DIR/worker_$WORKER_ID/etc $VELOX_ARGS &
