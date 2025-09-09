@@ -12,7 +12,6 @@ query_13.sql
 query_14.sql
 query_15.sql
 query_16.sql
-query_17.sql
 query_19.sql
 query_20.sql
 query_22.sql
