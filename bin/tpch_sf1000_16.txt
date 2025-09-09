@@ -5,7 +5,6 @@ query_04.sql
 query_05.sql
 query_06.sql
 query_07.sql
-query_08.sql
 query_10.sql
 query_11.sql
 query_12.sql
