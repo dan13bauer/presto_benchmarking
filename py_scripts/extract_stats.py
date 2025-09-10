@@ -2,6 +2,7 @@ import requests
 import csv
 import sys
 import re
+import traceback
 
 # List your fields here. Use dot notation for nested lookups.
 COOKED_NAMES= [
@@ -94,6 +95,10 @@ def get_cooked_row(elem):
     query_name = get_query(elem)
     scale_factor = get_scale_factor(elem)
     query_time = get_elapsed_time(elem)
+
+    if query_name is None or scale_factor is None or query_time is None:
+        return None
+
     return(query_name, scale_factor,query_time)
 
 def extract_records(json_array, field_names):
@@ -105,6 +110,10 @@ def extract_records(json_array, field_names):
     records = []
     for elem in json_array:
         row = tuple(get_value(elem, name) for name in field_names)
+        cooked_row = get_cooked_row(elem)
+        if cooked_row is None:
+            print ("Dropping " + str(row))
+            continue
         query_row = get_cooked_row(elem) + row
         records.append(query_row)
 
@@ -137,11 +146,12 @@ def main():
             print("ERROR: expected JSON array at root.")
             sys.exit(1)
 
-
-        records = extract_records(data, FIELD_NAMES)
-        write_csv(records, COOKED_NAMES + FIELD_NAMES, output_csv)
-        print(f"✅ Wrote {len(records)} records to {output_csv}")
-
+        try:
+            records = extract_records(data, FIELD_NAMES)
+            write_csv(records, COOKED_NAMES + FIELD_NAMES, output_csv)
+            print(f"✅ Wrote {len(records)} records to {output_csv}")
+        except:
+            traceback.print_exc()
     except requests.RequestException as e:
         print(f"Network error: {e}")
         sys.exit(1)
