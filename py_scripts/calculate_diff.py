@@ -1,8 +1,8 @@
 import sys
 import csv
 
-# Take an exchange and non exhange CSV file for queries with performance
-# and caculate how much slower the non exhange compared to the exchange
+# Take an two CSV file for queries with performance
+# and calculate how much slower the first compared to the second
 
 
 
