@@ -84,6 +84,9 @@ def get_scale_factor(elem):
     match = re.search(r'(\w+)_parquet', schema_string)
     if match:
         return match.group(1)  # the word after TPCH
+    match = re.search(r'(\w+)_nvidia', schema_string)
+    if match:
+        return match.group(1)  # the word after TPCH
     return None
 
 def get_elapsed_time(elem):
