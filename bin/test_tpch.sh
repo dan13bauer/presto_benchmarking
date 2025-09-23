@@ -8,7 +8,12 @@ PRESTO_CLI_DIR=$1
 QUERY_LIST=$2
 COORDINATOR_PORT=$3
 SF_SCHEMA=$4
-QUERY_DIR=./tpch_queries_nvidia
+QUERY_DIR=./tpch_queries
+
+if [[ "$SF_SCHEMA" == *"_nvidia" ]]; then
+    echo "using nvidia queries !"
+    QUERY_DIR=./tpch_queries_nvidia
+fi
 
 for query in $(cat $QUERY_LIST); do
 
