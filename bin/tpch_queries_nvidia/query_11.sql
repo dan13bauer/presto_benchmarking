@@ -14,7 +14,7 @@ group by
     ps.ps_partkey having
     sum(ps.ps_supplycost * ps.ps_availqty) > (
     select
-    sum(ps.ps_supplycost * ps.ps_availqty) * 0.0_0001
+    sum(ps.ps_supplycost * ps.ps_availqty) * 0.0001
     from
     partsupp AS ps,
     supplier AS s,
@@ -26,3 +26,4 @@ group by
     )
 order by
     value desc;
+
