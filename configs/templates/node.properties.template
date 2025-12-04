@@ -1,0 +1,5 @@
+node.environment=testing
+node.data-dir=/gpfs/zc2/data/tpch/
+node.ip={{TARGET_IP}}
+node.id={{NODE_ID}}
+node.location=testing-location
