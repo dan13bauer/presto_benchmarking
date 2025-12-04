@@ -1,0 +1,5 @@
+connector.name=hive-hadoop2
+hive.metastore.uri={{METASTORE_URI}}
+
+parquet.reader.chunk-read-limit=4294967296
+cudf.hive.use-buffered-input=false
