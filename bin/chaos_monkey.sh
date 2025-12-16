@@ -17,6 +17,7 @@
 #   --stop-probability PCT      Probability of stopping a worker 0-100 (default: 40)
 #   --start-probability PCT     Probability of starting a worker 0-100 (default: 30)
 #   --chaos-interval SECS       Seconds between chaos actions (default: 10)
+#   --worker-range START END    Range of worker IDs to target (e.g., 4 5, default: all workers)
 #   --output-dir DIR            Output directory for logs (default: ./chaos_results)
 #   --help                      Show this help message
 #
@@ -31,6 +32,8 @@ NUM_ITERATIONS="3"
 STOP_PROBABILITY="40"
 START_PROBABILITY="30"
 CHAOS_INTERVAL="10"
+WORKER_RANGE_START=""
+WORKER_RANGE_END=""
 OUTPUT_DIR="./chaos_results"
 HELP=false
 
@@ -68,6 +71,11 @@ while [[ $# -gt 0 ]]; do
         --chaos-interval)
             CHAOS_INTERVAL="$2"
             shift 2
+            ;;
+        --worker-range)
+            WORKER_RANGE_START="$2"
+            WORKER_RANGE_END="$3"
+            shift 3
             ;;
         --output-dir)
             OUTPUT_DIR="$2"
@@ -120,16 +128,28 @@ log_query_result() {
 
 # Get currently running workers
 get_running_workers() {
-    docker ps --filter "name=sro_worker_" --format "{{.Names}}" | sed 's/sro_worker_//' | sort -n
+    local workers=$(docker ps --filter "name=sro_worker_" --format "{{.Names}}" | sed 's/sro_worker_//' | sort -n)
+
+    if [ -n "$WORKER_RANGE_START" ] && [ -n "$WORKER_RANGE_END" ]; then
+        echo "$workers" | awk -v start="$WORKER_RANGE_START" -v end="$WORKER_RANGE_END" '$0 >= start && $0 <= end'
+    else
+        echo "$workers"
+    fi
 }
 
 # Get stopped workers
 get_stopped_workers() {
-    docker ps -a --filter "name=sro_worker_" --format "{{.Names}}" | while read container; do
+    local workers=$(docker ps -a --filter "name=sro_worker_" --format "{{.Names}}" | while read container; do
         if ! docker ps --format "{{.Names}}" | grep -q "^${container}$"; then
             echo "$container" | sed 's/sro_worker_//'
         fi
-    done | sort -n
+    done | sort -n)
+
+    if [ -n "$WORKER_RANGE_START" ] && [ -n "$WORKER_RANGE_END" ]; then
+        echo "$workers" | awk -v start="$WORKER_RANGE_START" -v end="$WORKER_RANGE_END" '$0 >= start && $0 <= end'
+    else
+        echo "$workers"
+    fi
 }
 
 # Stop a random worker
@@ -169,7 +189,12 @@ start_random_worker() {
     local worker_id="${stopped_workers[$random_idx]}"
 
     log_event "Starting worker $worker_id"
-    docker start "sro_worker_$worker_id" > /dev/null 2>&1
+
+    # Remove the stopped container first to avoid naming conflicts
+    docker rm "sro_worker_$worker_id" > /dev/null 2>&1
+
+    # Start the worker using start_worker.sh
+    bash ./bin/docker/start_worker.sh "$worker_id" > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
         log_event "Successfully started worker $worker_id"
@@ -230,6 +255,11 @@ main() {
     log "  Stop Probability: $STOP_PROBABILITY%"
     log "  Start Probability: $START_PROBABILITY%"
     log "  Chaos Interval: ${CHAOS_INTERVAL}s"
+    if [ -n "$WORKER_RANGE_START" ] && [ -n "$WORKER_RANGE_END" ]; then
+        log "  Worker Range: $WORKER_RANGE_START - $WORKER_RANGE_END"
+    else
+        log "  Worker Range: All workers"
+    fi
     log "  Output Directory: $OUTPUT_DIR"
     log "=========================================="
 
