@@ -18,6 +18,7 @@
 #   --start-probability PCT     Probability of starting a worker 0-100 (default: 30)
 #   --chaos-interval SECS       Seconds between chaos actions (default: 10)
 #   --worker-range START END    Range of worker IDs to target (e.g., 4 5, default: all workers)
+#   --container-prefix PREFIX   Container name prefix (default: sro_worker)
 #   --output-dir DIR            Output directory for logs (default: ./chaos_results)
 #   --help                      Show this help message
 #
@@ -34,6 +35,7 @@ START_PROBABILITY="60"
 CHAOS_INTERVAL="10"
 WORKER_RANGE_START=""
 WORKER_RANGE_END=""
+CONTAINER_PREFIX="sro_worker"
 OUTPUT_DIR="./chaos_results/$(date +%Y%m%d_%H%M%S)"
 HELP=false
 
@@ -76,6 +78,10 @@ while [[ $# -gt 0 ]]; do
             WORKER_RANGE_START="$2"
             WORKER_RANGE_END="$3"
             shift 3
+            ;;
+        --container-prefix)
+            CONTAINER_PREFIX="$2"
+            shift 2
             ;;
         --output-dir)
             OUTPUT_DIR="$2"
@@ -128,7 +134,7 @@ log_query_result() {
 
 # Get currently running workers
 get_running_workers() {
-    local workers=$(docker ps --filter "name=sro_worker_" --format "{{.Names}}" | sed 's/sro_worker_//' | sort -n)
+    local workers=$(docker ps --filter "name=${CONTAINER_PREFIX}_" --format "{{.Names}}" | sed "s/${CONTAINER_PREFIX}_//" | sort -n)
 
     if [ -n "$WORKER_RANGE_START" ] && [ -n "$WORKER_RANGE_END" ]; then
         echo "$workers" | awk -v start="$WORKER_RANGE_START" -v end="$WORKER_RANGE_END" '$0 >= start && $0 <= end'
@@ -139,9 +145,9 @@ get_running_workers() {
 
 # Get stopped workers
 get_stopped_workers() {
-    local workers=$(docker ps -a --filter "name=sro_worker_" --format "{{.Names}}" | while read container; do
+    local workers=$(docker ps -a --filter "name=${CONTAINER_PREFIX}_" --format "{{.Names}}" | while read container; do
         if ! docker ps --format "{{.Names}}" | grep -q "^${container}$"; then
-            echo "$container" | sed 's/sro_worker_//'
+            echo "$container" | sed "s/${CONTAINER_PREFIX}_//"
         fi
     done | sort -n)
 
@@ -165,7 +171,7 @@ stop_random_worker() {
     local worker_id="${running_workers[$random_idx]}"
 
     log_event "Stopping worker $worker_id"
-    docker stop "sro_worker_$worker_id" > /dev/null 2>&1
+    docker stop "${CONTAINER_PREFIX}_$worker_id" > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
         log_event "Successfully stopped worker $worker_id"
@@ -191,10 +197,10 @@ start_random_worker() {
     log_event "Starting worker $worker_id"
 
     # Remove the stopped container first to avoid naming conflicts
-    docker rm "sro_worker_$worker_id" > /dev/null 2>&1
+    docker rm "${CONTAINER_PREFIX}_$worker_id" > /dev/null 2>&1
 
     # Start the worker using start_worker.sh
-    bash ./docker/start_worker.sh "$worker_id" > /dev/null 2>&1
+    bash ./docker/start_worker.sh "$worker_id" "$CONTAINER_PREFIX" > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
         log_event "Successfully started worker $worker_id"
@@ -256,6 +262,7 @@ main() {
     log "  Stop Probability: $STOP_PROBABILITY%"
     log "  Start Probability: $START_PROBABILITY%"
     log "  Chaos Interval: ${CHAOS_INTERVAL}s"
+    log "  Container Prefix: $CONTAINER_PREFIX"
     if [ -n "$WORKER_RANGE_START" ] && [ -n "$WORKER_RANGE_END" ]; then
         log "  Worker Range: $WORKER_RANGE_START - $WORKER_RANGE_END"
     else

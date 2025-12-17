@@ -1,12 +1,14 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <WORKER_ID>"
-    echo "Example $0 1"
+    echo "Usage: $0 <WORKER_ID> [CONTAINER_PREFIX]"
+    echo "Example: $0 1"
+    echo "Example: $0 1 my_worker"
     exit 1
 else
 
 WORKER_ID=$1
+CONTAINER_PREFIX="${2:-sro_worker}"
 GPU_ID=$((WORKER_ID-1))
 IMG_BASE=presto-a3141860dc/velox-93c21a2b6
 #IMG_BASE=presto/main-dec2-drv-q9-fix
@@ -41,7 +43,7 @@ docker run $RM_CMD -d  --gpus all -it --network=host --cap-add=IPC_LOCK --shm-si
        -v ${HOME}/presto_workers/worker_${WORKER_ID}/etc:/opt/presto-server/etc \
        -v ${HOME}/presto_workers/dummy_config.sh:/root/.aws/config.sh \
        -v /gpfs/zc2:/gpfs/zc2 \
-       --name sro_worker_${WORKER_ID} \
+       --name ${CONTAINER_PREFIX}_${WORKER_ID} \
        ${IMG} \
        ${V_ARGS}
 fi
