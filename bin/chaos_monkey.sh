@@ -28,13 +28,13 @@ PRESTO_CLIENT="$HOME/presto_client"
 QUERY_LIST="./tpch_all_queries.txt"
 COORDINATOR_PORT="19001"
 SCHEMA="sf100_nvidia"
-NUM_ITERATIONS="3"
-STOP_PROBABILITY="40"
-START_PROBABILITY="30"
+NUM_ITERATIONS="1"
+STOP_PROBABILITY="30"
+START_PROBABILITY="60"
 CHAOS_INTERVAL="10"
 WORKER_RANGE_START=""
 WORKER_RANGE_END=""
-OUTPUT_DIR="./chaos_results"
+OUTPUT_DIR="./chaos_results/$(date +%Y%m%d_%H%M%S)"
 HELP=false
 
 # Parse command line arguments
@@ -115,11 +115,11 @@ mkdir -p "$OUTPUT_DIR"
 
 # Logging functions
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$OUTPUT_DIR/chaos_monkey.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" 
 }
 
 log_event() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] EVENT: $1" | tee -a "$OUTPUT_DIR/chaos_events.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] EVENT: $1" 
 }
 
 log_query_result() {
@@ -194,7 +194,7 @@ start_random_worker() {
     docker rm "sro_worker_$worker_id" > /dev/null 2>&1
 
     # Start the worker using start_worker.sh
-    bash ./bin/docker/start_worker.sh "$worker_id" > /dev/null 2>&1
+    bash ./docker/start_worker.sh "$worker_id" > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
         log_event "Successfully started worker $worker_id"
@@ -220,6 +220,8 @@ chaos_loop() {
             break
         fi
 
+	sleep "$CHAOS_INTERVAL"
+	
         # Randomly decide to stop a worker
         if [ $((RANDOM % 100)) -lt $STOP_PROBABILITY ]; then
             stop_random_worker
@@ -235,7 +237,6 @@ chaos_loop() {
         local stopped=$(get_stopped_workers | tr '\n' ',' | sed 's/,$//')
         log_event "Worker status - Running: [$running] | Stopped: [$stopped]"
 
-        sleep "$CHAOS_INTERVAL"
     done
 
     rm -f "$chaos_pid_file"
@@ -271,8 +272,13 @@ main() {
         log "========== ITERATION $iteration / $NUM_ITERATIONS =========="
 
         # Start all workers
+
+	log "Stopping all dead workers..."
+        bash ./docker/stop_all_workers.sh
+
+	
         log "Starting all workers..."
-        bash ./bin/docker/start_all_workers.sh >> "$OUTPUT_DIR/worker_control_$iteration.log" 2>&1
+        bash ./docker/start_all_workers.sh
         sleep 5
 
         # Log initial worker status
@@ -324,9 +330,10 @@ for query in $(cat $QUERY_LIST); do
         fi
 
         # Log result (using OUTPUT_DIR for proper path)
-        echo "${ITERATION},${query},${START_TIME},${END_TIME},${DURATION_SECS},${STATUS},${ERROR}" >> "${OUTPUT_DIR}/query_results.log"
+       echo "${ITERATION},${query},${START_TIME},${END_TIME},${DURATION_SECS},${STATUS},${ERROR}" >> "${OUTPUT_DIR}/query_results.log"
 
         echo "Query $query completed with status $STATUS in ${DURATION_SECS}s"
+	echo "Output: $QUERY_OUTPUT"
     fi
     sleep 3
 done
@@ -334,7 +341,7 @@ ITERATION_EOF
         chmod +x "$iteration_test_script"
 
         # Run test_tpch in background and capture PID
-        log "Starting query execution in background..."
+        log "Starting query execution in background ..."
         PRESTO_CLI_DIR="$PRESTO_CLIENT" \
         OUTPUT_DIR="$OUTPUT_DIR" \
         bash "$iteration_test_script" "$PRESTO_CLIENT" "$QUERY_LIST" "$COORDINATOR_PORT" "$SCHEMA" "$OUTPUT_DIR" "$iteration" > "$OUTPUT_DIR/query_execution_$iteration.log" 2>&1 &
@@ -364,12 +371,6 @@ ITERATION_EOF
 
         log_event "Iteration $iteration completed"
 
-        # Stop all workers for next iteration
-        if [ $iteration -lt $NUM_ITERATIONS ]; then
-            log "Stopping all workers before next iteration..."
-            bash ./bin/docker/stop_all_workers.sh >> "$OUTPUT_DIR/worker_control_$iteration.log" 2>&1
-            sleep 5
-        fi
     done
 
     log ""
