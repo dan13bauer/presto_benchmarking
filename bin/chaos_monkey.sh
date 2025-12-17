@@ -270,7 +270,7 @@ main() {
     fi
     log "  Output Directory: $OUTPUT_DIR"
     log "=========================================="
-
+    
     # Create results header
     log_query_result "ITERATION,QUERY,START_TIME,END_TIME,DURATION_SECS,STATUS,ERROR"
 
@@ -308,7 +308,7 @@ if [[ "$SF_SCHEMA" == *"_nvidia" ]]; then
     QUERY_DIR=./tpch_queries_nvidia
 fi
 
-for query in $(cat $QUERY_LIST); do
+for query in $(shuf $QUERY_LIST); do
     file=$QUERY_DIR/$query
     if [[ -f "$file" ]]; then
         START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
