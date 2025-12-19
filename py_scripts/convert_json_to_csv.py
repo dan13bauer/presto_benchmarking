@@ -34,21 +34,30 @@ def convert_benchmark_to_csv(json_path, csv_path=None):
     avg_times = agg_times.get('avg', {})
     min_times = agg_times.get('min', {})
     max_times = agg_times.get('max', {})
+    failed_queries = benchmark_data.get('failed_queries', {})
 
-    # Get all query names
-    query_names = sorted(set(avg_times.keys()) | set(min_times.keys()) | set(max_times.keys()))
+    # Get all query names (including successful and failed queries)
+    query_names = set(avg_times.keys()) | set(min_times.keys()) | set(max_times.keys()) | set(failed_queries.keys())
+
+    # Sort by numeric value after 'Q' instead of alphabetically
+    query_names = sorted(query_names, key=lambda x: int(x[1:]))
 
     # Write CSV file
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Query Name', 'Avg Time (seconds)', 'Min Time (seconds)', 'Max Time (seconds)'])
+        writer.writerow(['Query Name', 'Avg Time (seconds)', 'Min Time (seconds)', 'Max Time (seconds)', 'Status'])
 
         for query in query_names:
-            avg_sec = avg_times.get(query, 0) / 1000
-            min_sec = min_times.get(query, 0) / 1000
-            max_sec = max_times.get(query, 0) / 1000
-
-            writer.writerow([query, f'{avg_sec:.3f}', f'{min_sec:.3f}', f'{max_sec:.3f}'])
+            if query in failed_queries:
+                # Query failed - show error message
+                error_msg = failed_queries[query]
+                writer.writerow([query, 'FAILED', 'FAILED', 'FAILED', error_msg])
+            else:
+                # Query succeeded - show times
+                avg_sec = avg_times.get(query, 0) / 1000
+                min_sec = min_times.get(query, 0) / 1000
+                max_sec = max_times.get(query, 0) / 1000
+                writer.writerow([query, f'{avg_sec:.3f}', f'{min_sec:.3f}', f'{max_sec:.3f}', 'SUCCESS'])
 
     print(f"CSV file created: {csv_path}")
     print(f"Total queries: {len(query_names)}")
