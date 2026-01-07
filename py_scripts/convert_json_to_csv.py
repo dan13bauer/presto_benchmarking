@@ -34,10 +34,12 @@ def convert_benchmark_to_csv(json_path, csv_path=None):
     avg_times = agg_times.get('avg', {})
     min_times = agg_times.get('min', {})
     max_times = agg_times.get('max', {})
+    median_times = agg_times.get('median', {})
+    geometric_mean_times = agg_times.get('geometric_mean', {})
     failed_queries = benchmark_data.get('failed_queries', {})
 
     # Get all query names (including successful and failed queries)
-    query_names = set(avg_times.keys()) | set(min_times.keys()) | set(max_times.keys()) | set(failed_queries.keys())
+    query_names = set(avg_times.keys()) | set(min_times.keys()) | set(max_times.keys()) | set(median_times.keys()) | set(geometric_mean_times.keys()) | set(failed_queries.keys())
 
     # Sort by numeric value after 'Q' instead of alphabetically
     query_names = sorted(query_names, key=lambda x: int(x[1:]))
@@ -45,19 +47,21 @@ def convert_benchmark_to_csv(json_path, csv_path=None):
     # Write CSV file
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Query Name', 'Avg Time (seconds)', 'Min Time (seconds)', 'Max Time (seconds)', 'Status'])
+        writer.writerow(['Query Name', 'Avg Time (seconds)', 'Min Time (seconds)', 'Max Time (seconds)', 'Median Time (seconds)', 'Geometric Mean Time (seconds)', 'Status'])
 
         for query in query_names:
             if query in failed_queries:
                 # Query failed - show error message
                 error_msg = failed_queries[query]
-                writer.writerow([query, 'FAILED', 'FAILED', 'FAILED', error_msg])
+                writer.writerow([query, 'FAILED', 'FAILED', 'FAILED', 'FAILED', 'FAILED', error_msg])
             else:
                 # Query succeeded - show times
                 avg_sec = avg_times.get(query, 0) / 1000
                 min_sec = min_times.get(query, 0) / 1000
                 max_sec = max_times.get(query, 0) / 1000
-                writer.writerow([query, f'{avg_sec:.3f}', f'{min_sec:.3f}', f'{max_sec:.3f}', 'SUCCESS'])
+                median_sec = median_times.get(query, 0) / 1000
+                geometric_mean_sec = geometric_mean_times.get(query, 0) / 1000
+                writer.writerow([query, f'{avg_sec:.3f}', f'{min_sec:.3f}', f'{max_sec:.3f}', f'{median_sec:.3f}', f'{geometric_mean_sec:.3f}', 'SUCCESS'])
 
     print(f"CSV file created: {csv_path}")
     print(f"Total queries: {len(query_names)}")
