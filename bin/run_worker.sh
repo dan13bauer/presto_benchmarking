@@ -15,8 +15,9 @@ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-12/root/usr/lib64:/opt/rh/gcc-toolset
 
 #UCX_PARAMS="UCX_TCP_CM_REUSEADDR=y UCX_TLS=^ib UCX_LOG_LEVEL=error UCX_TCP_KEEPINTVL=1ms UCX_KEEPALIVE_INTERVAL=1ms"
 UCX_PARAMS="UCX_TCP_CM_REUSEADDR=y UCX_PROTO_INFO=y UCX_LOG_LEVEL=error UCX_RNDV_PIPELINE_ERROR_HANDLING=y"
-CUDA_PARAMS="CUDA_VISIBLE_DEVICES=$GPU_ID LIBCUDF_USE_DEBUG_STREAM_POOL=ON GLOG_logtostderr=1"
-VELOX_ARGS="-velox_cudf_debug=true -velox_cudf_table_scan=true -velox_cudf_enabled=true -velox_cudf_exchange=true -velox_cudf_memory_resource=async -v=3"
+CUDA_PARAMS="CUDA_VISIBLE_DEVICES=$GPU_ID GLOG_logtostderr=1"
+#VELOX_ARGS="-velox_cudf_debug=true -velox_cudf_table_scan=true -velox_cudf_enabled=true -velox_cudf_exchange=true -velox_cudf_memory_resource=async -v=3"
+VELOX_ARGS="-v=3"
 
 
 env $UCX_PARAMS env $CUDA_PARAMS $BUILD_DIR/presto_cpp/main/presto_server -etc_dir $WORKER_CONFIG_DIR $VELOX_ARGS

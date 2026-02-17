@@ -18,7 +18,7 @@
 #   --start-probability PCT     Probability of starting a worker 0-100 (default: 30)
 #   --chaos-interval SECS       Seconds between chaos actions (default: 10)
 #   --worker-range START END    Range of worker IDs to target (e.g., 4 5, default: all workers)
-#   --container-prefix PREFIX   Container name prefix (default: sro_worker)
+#   --container-prefix PREFIX   Container name prefix (default: dnb_worker)
 #   --output-dir DIR            Output directory for logs (default: ./chaos_results)
 #   --help                      Show this help message
 #
@@ -35,7 +35,7 @@ START_PROBABILITY="60"
 CHAOS_INTERVAL="10"
 WORKER_RANGE_START=""
 WORKER_RANGE_END=""
-CONTAINER_PREFIX="sro_worker"
+CONTAINER_PREFIX="dnb_worker"
 OUTPUT_DIR="./chaos_results/$(date +%Y%m%d_%H%M%S)"
 HELP=false
 
