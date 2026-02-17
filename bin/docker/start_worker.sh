@@ -8,16 +8,10 @@ if [ $# -lt 1 ]; then
 else
 
 WORKER_ID=$1
-CONTAINER_PREFIX="${2:-sro_worker}"
+CONTAINER_PREFIX="${2:-dnb_worker}"
 GPU_ID=$((WORKER_ID-1))
-IMG_BASE=presto-a3141860dc/velox-93c21a2b6
-#IMG_BASE=presto/main-dec2-drv-q9-fix
-#IMG_BASE=471112500371.dkr.ecr.us-west-2.amazonaws.com/presto/prestissimo-runtime-centos9
-#IMG_VER=ucx1.19.0-latest-exchange
-#IMG_VER=ucx1.19.0-latest-exchange-mem-cudf2510
-#IMG_VER=latest-rapidsai-exchange
-#IMG_VER=9d198e0
-IMG_VER=centos
+IMG_BASE=presto/rapidsai-update
+IMG_VER=20251217
 
 IMG=${IMG_BASE}:${IMG_VER}
 DEV_ARG=\"device=${GPU_ID}\"
@@ -40,7 +34,7 @@ docker run $RM_CMD -d  --gpus all -it --network=host --cap-add=IPC_LOCK --shm-si
        -e UCX_PROTO_INFO=y \
        -e UCX_RNDV_PIPELINE_ERROR_HANDLING=y \
        -v ~/tmp/presto-root/:/tmp/presto-root/ \
-       -v ${HOME}/presto_workers/worker_${WORKER_ID}/etc:/opt/presto-server/etc \
+       -v ${HOME}/presto_run_zrl/wrk_cfg_sally/worker${WORKER_ID}/etc:/opt/presto-server/etc \
        -v ${HOME}/presto_workers/dummy_config.sh:/root/.aws/config.sh \
        -v /gpfs/zc2:/gpfs/zc2 \
        --name ${CONTAINER_PREFIX}_${WORKER_ID} \
