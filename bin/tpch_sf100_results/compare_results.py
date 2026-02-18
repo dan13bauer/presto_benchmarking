@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Compare TPC-H SF100 query results between CPU and GPU execution.
+"""Compare TPC-H SF100 query results between two execution directories.
+
+Usage: compare_results.py <dir1> <dir2>
 
 Handles:
   - Floating-point rounding differences (relative tolerance)
@@ -8,14 +10,13 @@ Handles:
 """
 
 import csv
+import glob
 import io
 import os
 import sys
 
 
 # ── Configuration ──────────────────────────────────────────────────────────
-CPU_DIR = "cpu_res"
-GPU_DIR = "gpu_res"
 REL_TOL = 1e-6  # relative tolerance for float comparison
 
 
@@ -317,29 +318,60 @@ COMPARATORS = {
 }
 
 
+def count_result_files(directory):
+    """Count query_*.res files in a directory."""
+    return len(glob.glob(os.path.join(directory, "query_*.res")))
+
+
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    cpu_dir = os.path.join(script_dir, CPU_DIR)
-    gpu_dir = os.path.join(script_dir, GPU_DIR)
+    if len(sys.argv) != 3:
+        print(f"Usage: {sys.argv[0]} <dir1> <dir2>", file=sys.stderr)
+        return 2
+
+    dir1 = sys.argv[1]
+    dir2 = sys.argv[2]
+
+    # Validate directories
+    for d in (dir1, dir2):
+        if not os.path.isdir(d):
+            print(f"Error: '{d}' is not a directory", file=sys.stderr)
+            return 2
+
+    # Check that both directories contain the same number of result files
+    count1 = count_result_files(dir1)
+    count2 = count_result_files(dir2)
+    if count1 != count2:
+        print(
+            f"Error: result file count mismatch: "
+            f"'{dir1}' has {count1}, '{dir2}' has {count2}",
+            file=sys.stderr,
+        )
+        return 2
+    if count1 == 0:
+        print(f"Error: no query_*.res files found in either directory", file=sys.stderr)
+        return 2
+
+    print(f"Comparing: {dir1}  vs  {dir2}")
+    print(f"Result files per directory: {count1}\n")
 
     passed = 0
     failed = 0
 
     for q in range(1, 23):
         filename = f"query_{q:02d}.res"
-        cpu_path = os.path.join(cpu_dir, filename)
-        gpu_path = os.path.join(gpu_dir, filename)
+        path1 = os.path.join(dir1, filename)
+        path2 = os.path.join(dir2, filename)
 
-        if not os.path.exists(cpu_path) or not os.path.exists(gpu_path):
+        if not os.path.exists(path1) or not os.path.exists(path2):
             print(f"Query {q:2d}: SKIP (file not found)")
             continue
 
-        cpu_rows = parse_result_file(cpu_path)
-        gpu_rows = parse_result_file(gpu_path)
+        rows1 = parse_result_file(path1)
+        rows2 = parse_result_file(path2)
 
         comparator = COMPARATORS[q]
         doc_line = comparator.__doc__.strip().splitlines()[0]
-        ok, msgs = comparator(cpu_rows, gpu_rows)
+        ok, msgs = comparator(rows1, rows2)
 
         status = "PASS" if ok else "FAIL"
         print(f"Query {q:2d}: {status}  [{doc_line}]")
