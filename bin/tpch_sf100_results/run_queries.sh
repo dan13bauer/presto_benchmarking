@@ -12,12 +12,6 @@ if [ ! -d "$OUT_DIR" ]; then
     exit 1
 fi
 
-count=$(ls "$OUT_DIR"/query_[0-9][0-9].res 2>/dev/null | wc -l)
-if [ "$count" -ne 22 ]; then
-    echo "Error: Expected 22 query_??.res files in '$OUT_DIR', found $count."
-    exit 1
-fi
-
 for q in query_*sql; do
 ~/presto_run_zrl/presto --server localhost:19000 --catalog hive --schema sf100_nvidia --session single_node_execution_enabled=false -f $q >& ./$OUT_DIR/${q//sql/res}
 done
